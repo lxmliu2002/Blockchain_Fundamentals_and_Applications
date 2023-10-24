@@ -52,44 +52,44 @@ Group 31
 		def coinExchangeScript(public_key_sender, public_key_recipient, hash_of_secret):
 			return [
 				# fill this in!
-			public_key_sender,
-			OP_CHECKSIG,
-			OP_IF,
-				public_key_recipient,
+				public_key_sender,
 				OP_CHECKSIG,
 				OP_IF,
-					OP_1,
-				OP_ELSE,
-					OP_DUP,
-					OP_HASH160,
-					hash_of_secret,
-					OP_EQUAL,
+					public_key_recipient,
+					OP_CHECKSIG,
 					OP_IF,
 						OP_1,
 					OP_ELSE,
 						OP_DUP,
-						OP_2,
-						public_key_sender,
-						public_key_recipient,
-						OP_CHECKMULTISIG,
+						OP_HASH160,
+						hash_of_secret,
+						OP_EQUAL,
+						OP_IF,
+							OP_1,
+						OP_ELSE,
+							OP_DUP,
+							OP_2,
+							public_key_sender,
+							public_key_recipient,
+							OP_CHECKMULTISIG,
+						OP_ENDIF,
 					OP_ENDIF,
-				OP_ENDIF,
-			OP_ENDIF
+				OP_ENDIF
 			]
 	B 完善脚本
 		a 完善 coinExchangeScriptSig1 脚本
 			def coinExchangeScriptSig1(sig_recipient, secret):
 				return [
 					# fill this in!
-				secret,
-				sig_recipient
+					secret,
+					sig_recipient
 				]
 		b 完善 coinExchangeScriptSig2 脚本
 			def coinExchangeScriptSig2(sig_sender, sig_recipient):
 				return [
 					# fill this in!
-				sig_recipient,
-				sig_sender
+					sig_recipient,
+					sig_sender
 				]
 	C 运行 swap.py
 		a broadcast_transactions = False && alice_redeems = False 输出结果如下（运行截图 C_a.png）。
@@ -108,15 +108,15 @@ Group 31
 				1) 生成密钥
 					C:\Users\lxmli>curl -X POST https://api.blockcypher.com/v1/bcy/test/addrs?token=d6fe7373f62f476a876df5d633e4293d
 					{
-					"private": "7bcdb57926e60e6aa751d8057ac06adc1065095ad0085edac0bad3eaae60c7d0",
-					"public": "021505af54164eee76ba6d9731e16082768ad4a4ff2175b0fdf1f4effc23672dcb",
-					"address": "BzFDzDVKqe7jkwpVZUdGXB2Fgx7qtq4BLq",
-					"wif": "BsUgu39T6ww8HWyJt2hQhzFSnKMZheHosb7ZEV91cpJFXGnhkEg9"
+					  "private": "7bcdb57926e60e6aa751d8057ac06adc1065095ad0085edac0bad3eaae60c7d0",
+					  "public": "021505af54164eee76ba6d9731e16082768ad4a4ff2175b0fdf1f4effc23672dcb",
+					  "address": "BzFDzDVKqe7jkwpVZUdGXB2Fgx7qtq4BLq",
+					  "wif": "BsUgu39T6ww8HWyJt2hQhzFSnKMZheHosb7ZEV91cpJFXGnhkEg9"
 					}
 				2) 领取测试币
 					C:\Users\lxmli>curl -d "{\"address\": \"BzFDzDVKqe7jkwpVZUdGXB2Fgx7qtq4BLq\", \"amount\": 1000000}" https://api.blockcypher.com/v1/bcy/test/faucet?token=d6fe7373f62f476a876df5d633e4293d
 					{
-					"tx_ref": "a0a7e88e704df710352eef2543de91ac8ce66d8b6e63a205271f22395e03d2ef"
+					  "tx_ref": "a0a7e88e704df710352eef2543de91ac8ce66d8b6e63a205271f22395e03d2ef"
 					}
 			将相关信息填写到正确位置后，运行 swap.py 得到输出。
 	D 设计文档
