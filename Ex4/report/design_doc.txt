@@ -1,0 +1,158 @@
+区块链基础及应用
+Ex4设计思路及实验实现
+Group 31
+2112492 刘修铭 2112362 张润哲
+1. 使用 keygen.py 生成 BTC testnet 密钥，并领取测试币
+	1.1 Alice
+		Private key: cUpCNaMwCphDA1NRoeFiSNQhQghDAHCiKnAHjsAYhtC7brHWxSLu
+		Address: mjctYGeicFgM3q81mjsPW6YSX28ZLVHYQ2
+	1.2 Bob
+		Private key: cVe2gjMb76HjG8Wr5bU3CUruccBLxPLxE7uDmt5rneDRRcPaXcTZ
+		Address: mtYR9tdnmDjDgLtAqeDNL6EfA11TAsheha
+	1.3 领取测试币
+		https://live.blockcypher.com/btc-testnet/tx/afae0a5a61fb0fe109bf1339da482428b97823c64cc76cfeded1005accad197a/
+
+2. 创建 BCY 账户并领取测试币
+	2.1 注册账户获取 API token
+		Token d6fe7373f62f476a876df5d633e4293d
+	2.2 创建 BCY testnet 密钥
+		2.2.1 Alice
+			C:\Users\lxmli>curl -X POST https://api.blockcypher.com/v1/bcy/test/addrs?token=d6fe7373f62f476a876df5d633e4293d
+			{
+ 			  "private": "3991895a89e87b2b8284eddfa29d25317a694f6a3dd82596581eefc9b101da5b",
+			  "public": "031cafc11a94e1089f952d82852dab31c18965018da5af451b225baed5ec5741d1",
+			  "address": "CFCn7K7hS63cv2sXEMupexF5MA64F2qLYj",
+			  "wif": "BqFwGNamEHpL4Du68pqBKtFCwHNJevvn3Hzfd59ykxiEcviUQS2a"
+			}
+		2.2.2 Bob
+			C:\Users\lxmli>curl -X POST https://api.blockcypher.com/v1/bcy/test/addrs?token=d6fe7373f62f476a876df5d633e4293d
+			{
+			  "private": "221d9a49929481c2c2a253dd08f3a1046e66df654bd1e65809b1b75624cee0a4",
+			  "public": "03d0475a17721d708eecd7277f1b8eb38f2480a85fee478b0fae83cffd84d29c88",
+			  "wif": "BpUM5wX4hYRoWRRypiccACvLRnHwBkb2uEqkaMsLd7Use4XR5qyQ"
+			}
+	2.3 领取测试币
+			C:\Users\lxmli>curl -d "{\"address\": \"C1UhLgQa51AuDhoB8NdjQxYrzeVN8jqNKP\", \"amount\": 1000000}" https://api.blockcypher.com/v1/bcy/test/faucet?token=d6fe7373f62f476a876df5d633e4293d
+			{
+			"tx_ref": "647208d0059a49fe73ea679f8642efcae095cad66269d75c8765503a778afb75"
+			}
+			https://live.blockcypher.com/bcy/tx/647208d0059a49fe73ea679f8642efcae095cad66269d75c8765503a778afb75/
+			！ 如果使用 Windows 系统完成项目，会遇到报错情况，经过查询得知，Windows 系统的 cmd 不支持单引号，故而需要对其进行转义修复
+	2.4 填入 keys.py
+		alice_secret_key_BTC = CBitcoinSecret('cUpCNaMwCphDA1NRoeFiSNQhQghDAHCiKnAHjsAYhtC7brHWxSLu')
+		bob_secret_key_BTC = CBitcoinSecret('cVe2gjMb76HjG8Wr5bU3CUruccBLxPLxE7uDmt5rneDRRcPaXcTZ')
+		alice_secret_key_BCY = CBitcoinSecret.from_secret_bytes(x('3991895a89e87b2b8284eddfa29d25317a694f6a3dd82596581eefc9b101da5b'))
+		bob_secret_key_BCY = CBitcoinSecret.from_secret_bytes(x('221d9a49929481c2c2a253dd08f3a1046e66df654bd1e65809b1b75624cee0a4'))
+
+3. 使用 split_test_coins.py 划分领取的币
+	将相关信息如密钥等填入相应位置，将领取的币划分为 10 份，输出结果已写于 split_test_coins_output.txt 文件中。
+
+4. 练习
+	A 完善 coinExchangeScript 脚本
+		def coinExchangeScript(public_key_sender, public_key_recipient, hash_of_secret):
+			return [
+				# fill this in!
+			public_key_sender,
+			OP_CHECKSIG,
+			OP_IF,
+				public_key_recipient,
+				OP_CHECKSIG,
+				OP_IF,
+					OP_1,
+				OP_ELSE,
+					OP_DUP,
+					OP_HASH160,
+					hash_of_secret,
+					OP_EQUAL,
+					OP_IF,
+						OP_1,
+					OP_ELSE,
+						OP_DUP,
+						OP_2,
+						public_key_sender,
+						public_key_recipient,
+						OP_CHECKMULTISIG,
+					OP_ENDIF,
+				OP_ENDIF,
+			OP_ENDIF
+			]
+	B 完善脚本
+		a 完善 coinExchangeScriptSig1 脚本
+			def coinExchangeScriptSig1(sig_recipient, secret):
+				return [
+					# fill this in!
+				secret,
+				sig_recipient
+				]
+		b 完善 coinExchangeScriptSig2 脚本
+			def coinExchangeScriptSig2(sig_sender, sig_recipient):
+				return [
+					# fill this in!
+				sig_recipient,
+				sig_sender
+				]
+	C 运行 swap.py
+		a broadcast_transactions = False && alice_redeems = False 输出结果如下（运行截图 C_a.png）。
+			Alice swap tx (BTC) created successfully!
+			Bob swap tx (BCY) created successfully!
+			Bob return coins (BCY) tx created successfully!
+			Alice return coins tx (BTC) created successfully!
+		b broadcast_transactions = False && alice_redeems = True 输出结果如下（运行截图 C_b.png）。
+			Alice swap tx (BTC) created successfully!
+			Bob swap tx (BCY) created successfully!
+			Alice redeem from swap tx (BCY) created successfully!
+			Bob redeem from swap tx (BTC) created successfully!
+		c broadcast_transactions = True && alice_redeems = False 输出结果已写于 swap_c_output.txt 文件中。
+		d broadcast_transactions = True && alice_redeems = True 输出结果已写于 swap_d_output.txt 文件中。
+			由于前面交易中 Bob 的测试币已经转走，现重新领取
+				1) 生成密钥
+					C:\Users\lxmli>curl -X POST https://api.blockcypher.com/v1/bcy/test/addrs?token=d6fe7373f62f476a876df5d633e4293d
+					{
+					"private": "7bcdb57926e60e6aa751d8057ac06adc1065095ad0085edac0bad3eaae60c7d0",
+					"public": "021505af54164eee76ba6d9731e16082768ad4a4ff2175b0fdf1f4effc23672dcb",
+					"address": "BzFDzDVKqe7jkwpVZUdGXB2Fgx7qtq4BLq",
+					"wif": "BsUgu39T6ww8HWyJt2hQhzFSnKMZheHosb7ZEV91cpJFXGnhkEg9"
+					}
+				2) 领取测试币
+					C:\Users\lxmli>curl -d "{\"address\": \"BzFDzDVKqe7jkwpVZUdGXB2Fgx7qtq4BLq\", \"amount\": 1000000}" https://api.blockcypher.com/v1/bcy/test/faucet?token=d6fe7373f62f476a876df5d633e4293d
+					{
+					"tx_ref": "a0a7e88e704df710352eef2543de91ac8ce66d8b6e63a205271f22395e03d2ef"
+					}
+			将相关信息填写到正确位置后，运行 swap.py 得到输出。
+	D 设计文档
+		a 解释代码内容，以及coinExchangeScript是如何工作.
+			本次实验中补充的代码主要由两部分组成
+			* 第一部分是一些密钥等的补充，按照实验指导说明一步步完成即可。
+				* 此处遇到的问题是Windows中cmd对单引号的不支持，经过对其进行转义后得以修复。
+			* 第二部分为交易脚本的编写（代码前面已经给出，此处仅作解释说明）
+				* coinExchangeScript
+					该脚本首先检查接收者的身份，如果能够通过签名认证，则首先检查其是否知晓秘密x，如果知晓，则说明可以赎回；如果不知晓秘密x，但能够拥有发送者的认证签名，则说明可以赎回；否则，无法赎回。
+				* coinExchangeScriptSig1
+					该脚本能够实现接收者知道秘密x的情况下赎回交易
+				* coinExchangeScriptSig2
+					该脚本能够在发送方和接收方都签署事务的情况下赎回事务
+		b 以Alice用coinExchangeScript向Bob发送硬币为例
+			1) 如果Bob不把钱赎回来，Alice为什么总能拿回她的钱？
+				* Alice知道秘密x，因此她可以通过她自己的签名与秘密x赎回脚本
+				* locktime机制的存在，使得如果Bob一段时间后未赎回，Alice将由自己的签名与秘密赎回脚本
+			2) 为什么不能用简单的1/2 multisig来解决这个问题？
+				* 1/2 multisig要求在赎回资金时需要两个签名，这意味着双方必须合作。如果一方不愿意提供签名，资金将无法赎回，也就是说，存在资金被锁定的情况，除非双方都同意方可解锁。
+				* 1/2 multisig通常需要在线签署，不适于离线交易
+		c 解释Alice (Bob) 创建的一些交易内容和先后次序，以及背后的设计原理。
+			1. Alice 创建一个随机字符串 x 将其作为秘密，并计算其哈希值H(x)
+			2. Alice 创建 DepositA，将要交换的钱输入其中但不予以广播，此时这笔钱不属于任何人；
+			3. Alice 创建 RefundA，向 Bob 索要签名，并将其广播至网络，同时设定alice_locktime：如果 Bob 在该时间内未赎回，Alice 还能拿回自己的钱；
+			4. 如果 Bob 签署了 RefundA，Alice 会将 DepositA 广播至网络，但 RefundA 仍然保密；
+			5. Bob 创建 DepositB，将要交换的钱输入其中但不予以广播，此时这笔钱不属于任何人；
+			6. Bos 创建 RefundB，向 Alice 索要签名，并将其广播至网络，同时设定bob_locktime：如果 Alice 在该时间内未赎回，Bob 还能拿回自己的钱；
+			7. 如果 Alice签署了 RefundB，Bob 会将 DepositB 广播至网络，但 RefundB 仍然保密；
+			8. Alice 使用自己的正确签名与自己的秘密 x 赎回 DepositB，然后将秘密 x 广播至网络；
+			9. Bob 使用自己的正确签名与 Alice 广播的秘密 x 赎回 DepositA，完成交易。
+			这个设计的原理是创建一系列的交易，其中每个交易要么等待秘密 x 的哈希值，要么等待正确的签名以解锁。这使得 Alice 和 Bob 可以相互安全地进行资金交换，并确保在需要时能够取回自己的资金。
+		d 以该作业为例，一次成功的跨链原子交换中，数字货币是如何流转的？如果失败，数字货币又是如何流转的？
+			* 成功
+				1. 数字货币由交换货币的双方发送至网络，此时二人暂时失去这些数字货币的所有权；
+				2. 交易的双方完成需要的签名认证等环节后，凭借自己获得的信息赎回网络上的数字货币，获得所有权，完成跨链原子交换。
+			* 失败
+				1. 数字货币由交换货币的双方发送至网络，此时二人暂时失去这些数字货币的所有权；
+				2. 如果交易失败，数字货币会最终由本人赎回，即流转回自己手中。

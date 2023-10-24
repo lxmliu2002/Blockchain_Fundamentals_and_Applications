@@ -1,0 +1,102 @@
+Alice swap tx (BTC) created successfully!
+201 Created
+{
+"tx": {
+    "block_height": -1,
+    "block_index": -1,
+    "hash": "c7d43a5c1adc6b9af16ca5677d89a2880655ee2fbd3cc651a31597606f10b6df",
+    "addresses": [
+    "mjctYGeicFgM3q81mjsPW6YSX28ZLVHYQ2"
+    ],
+    "total": 400000,
+    "fees": 150000,
+    "size": 342,
+    "vsize": 342,
+    "preference": "high",
+    "relayed_by": "103.20.198.139",
+    "received": "2023-10-24T10:18:25.200874767Z",
+    "ver": 1,
+    "double_spend": false,
+    "vin_sz": 1,
+    "vout_sz": 1,
+    "confirmations": 0,
+    "inputs": [
+    {
+        "prev_hash": "26ef803d4a07e1b48dc8c1e7bf7bd9a630ac2e979dcc2c6a3638c0ad1877aae3",
+        "output_index": 1,
+        "script": "483045022100de38a5748a1c8757855c86037b2095c1d13b059f104e03e7e27208d5929ab7b102201d73dcba77e9910cc6fd8704764a9a8eec06ba7e93a520e695b56a8e33e2ddb4012103887f6bf8f22cac34e6b2c52deca82adbf1558c2a49b066c6024e56c61db8f11f",
+        "output_value": 550000,
+        "sequence": 4294967295,
+        "addresses": [
+        "mjctYGeicFgM3q81mjsPW6YSX28ZLVHYQ2"
+        ],
+        "script_type": "pay-to-pubkey-hash",
+        "age": 2534921
+    }
+    ],
+    "outputs": [
+    {
+        "value": 400000,
+        "script": "2103887f6bf8f22cac34e6b2c52deca82adbf1558c2a49b066c6024e56c61db8f11fac6321039f886ecc863bc71cb1b358f12ae19df33457749abe766990120d8027804ed953ac63516776a914853b775079232503df966e626618e1d388a957208763516776522103887f6bf8f22cac34e6b2c52deca82adbf1558c2a49b066c6024e56c61db8f11f21039f886ecc863bc71cb1b358f12ae19df33457749abe766990120d8027804ed953ae686868",
+        "addresses": null,
+        "script_type": "unknown"
+    }
+    ]
+}
+}
+Bob swap tx (BCY) created successfully!
+201 Created
+{
+"tx": {
+    "block_height": -1,
+    "block_index": -1,
+    "hash": "a3bee6e140a3070ddde6dd5f745cdf00edf1f16dcf8f143fd54462a3c94db830",
+    "addresses": [
+    "C1UhLgQa51AuDhoB8NdjQxYrzeVN8jqNKP"
+    ],
+    "total": 900000,
+    "fees": 100000,
+    "size": 342,
+    "vsize": 342,
+    "preference": "high",
+    "relayed_by": "103.20.198.139",
+    "received": "2023-10-24T10:18:26.128916581Z",
+    "ver": 1,
+    "double_spend": false,
+    "vin_sz": 1,
+    "vout_sz": 1,
+    "confirmations": 0,
+    "inputs": [
+    {
+        "prev_hash": "647208d0059a49fe73ea679f8642efcae095cad66269d75c8765503a778afb75",
+        "output_index": 0,
+        "script": "483045022100ab3b7cad03cb0e98d7242744ad7a4e18c91af2194adfb13517ababaa3836e33f022022a81dce6fe7f8747972b8074be2c48cc126548dbe6215bd0c3650d31551b2d6012103d0475a17721d708eecd7277f1b8eb38f2480a85fee478b0fae83cffd84d29c88",
+        "output_value": 1000000,
+        "sequence": 4294967295,
+        "addresses": [
+        "C1UhLgQa51AuDhoB8NdjQxYrzeVN8jqNKP"
+        ],
+        "script_type": "pay-to-pubkey-hash",
+        "age": 1036994
+    }
+    ],
+    "outputs": [
+    "outputs": [
+    {
+        "value": 900000,
+        "script": "2103d0475a17721d708eecd7277f1b8eb38f2480a85fee478b0fae83cffd84d29c88ac6321031cafc11a94e1089f952d82852dab31c18965018da5af451b225baed5ec5741d1ac63516776a914853b775079232503df966e626618e1d388a957208763516776522103d0475a17721d708eecd7277f1b8eb38f2480a85fee478b0fae83cffd84d29c8821031cafc11a94e1089f952d82852dab31c18965018da5af451b225baed5ec5741d1ae686868",
+        "addresses": null,
+        "script_type": "unknown"
+    }
+    ]
+}
+}
+Sleeping for 20 minutes to let transactions confirm...
+Bob return coins (BCY) tx created successfully!
+Alice return coins tx (BTC) created successfully!
+Sleeping for bob_locktime blocks to pass locktime...
+400 Bad Request
+{"error": "Error validating transaction: Transaction a09f539e5a722f31f045c86fe1298dcd5ca6e749a1ca4fa40b2b3f2552f77dd7 orphaned, missing reference 30b84dc9a36244d53f148fcf6df1f1ed00df5c745fdde6dd0d07a340e1e6bea3."}
+Sleeping for alice_locktime blocks to pass locktime...
+400 Bad Request
+{"error": "Error validating transaction: Transaction 0961d3af066c3057edf5dcc0ee6b64b51e90d04d83ea4824c4894f62deffa14a orphaned, missing reference dfb6106f609715a351c63cbd2fee550688a2897d67a56cf19a6bdc1a5c3ad4c7."}
