@@ -34,7 +34,7 @@ Group 31
 	2.3 领取测试币
 			C:\Users\lxmli>curl -d "{\"address\": \"C1UhLgQa51AuDhoB8NdjQxYrzeVN8jqNKP\", \"amount\": 1000000}" https://api.blockcypher.com/v1/bcy/test/faucet?token=d6fe7373f62f476a876df5d633e4293d
 			{
-			"tx_ref": "647208d0059a49fe73ea679f8642efcae095cad66269d75c8765503a778afb75"
+			  "tx_ref": "647208d0059a49fe73ea679f8642efcae095cad66269d75c8765503a778afb75"
 			}
 			https://live.blockcypher.com/bcy/tx/647208d0059a49fe73ea679f8642efcae095cad66269d75c8765503a778afb75/
 			！ 如果使用 Windows 系统完成项目，会遇到报错情况，经过查询得知，Windows 系统的 cmd 不支持单引号，故而需要对其进行转义修复
