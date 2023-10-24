@@ -3,8 +3,8 @@ import alice
 import bob
 
 
-#                                                                   
-#              Written by: Max Spero                                 
+#
+#              Written by: Max Spero
 #
 # In this assignment we will implement a cross-chain atomic swap
 # between two parties, Alice and Bob.
@@ -17,11 +17,11 @@ import bob
 #
 # This method also works between other cryptocurrencies and altcoins,
 # for example trading n Bitcoin for m Litecoin.
-# 
+#
 # The idea here is to set up transactions around a secret x, that
-# only one party (Alice) knows. In these transactions only H(x) 
-# will be published, leaving x secret. 
-# 
+# only one party (Alice) knows. In these transactions only H(x)
+# will be published, leaving x secret.
+#
 # Transactions will be set up in such a way that once x is revealed,
 # both parties can redeem the coins sent by the other party.
 #
@@ -31,7 +31,7 @@ import bob
 #
 #
 ######################################################################
-#                           BTC Testnet3                             #     
+#                           BTC Testnet3                             #
 ######################################################################
 #
 # Alice ----> UTXO ----> Bob (with x)
@@ -55,15 +55,15 @@ import bob
 ######################################################################
 #
 # Configured for your addresses
-# 
+#
 # TODO: Fill in all of these fields
 #
 
-alice_txid_to_spend     = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" 
-alice_utxo_index        = None
-alice_amount_to_send    = None
+alice_txid_to_spend     = "26ef803d4a07e1b48dc8c1e7bf7bd9a630ac2e979dcc2c6a3638c0ad1877aae3"
+alice_utxo_index        = 0
+alice_amount_to_send    = 0.005
 
-bob_txid_to_spend       = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+bob_txid_to_spend       = "647208d0059a49fe73ea679f8642efcae095cad66269d75c8765503a778afb75"
 bob_utxo_index          = 0
 bob_amount_to_send      = 0.01
 
@@ -92,7 +92,7 @@ alice_redeems = False
 ######################################################################
 #
 # Read the following function.
-# 
+#
 # There's nothing to implement here, but it outlines the structure
 # of how Alice and Bob will communicate to perform this cross-
 # chain atomic swap.
@@ -169,7 +169,6 @@ def atomic_swap(broadcast_transactions=False, alice_redeems=True):
         if broadcast_transactions:
             bob.broadcast_BTC(bob_redeem_tx)
     else:
-        
         # Bob and Alice may take back their original coins after the specified time has passed
         completed_bob_return_tx = bob.complete_return_tx(
             bob_return_coins_tx,

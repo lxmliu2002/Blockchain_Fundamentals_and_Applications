@@ -43,7 +43,7 @@ if __name__ == '__main__':
     ######################################################################
     #
 
-    my_private_key = CBitcoinSecret('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+    my_private_key = CBitcoinSecret('cUpCNaMwCphDA1NRoeFiSNQhQghDAHCiKnAHjsAYhtC7brHWxSLu')
 
     my_public_key = my_private_key.pub
     my_address = P2PKHBitcoinAddress.from_pubkey(my_public_key)
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     faucet_address = CBitcoinAddress('mv4rnyY3Su5gjcDNzbMLKBQkBicCtHUtFB')
     amount_to_send = None
     txid_to_spend = (
-        'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+        'afae0a5a61fb0fe109bf1339da482428b97823c64cc76cfeded1005accad197a')
     utxo_index = None
     network = 'btc-test3'
 

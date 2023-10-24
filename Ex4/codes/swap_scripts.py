@@ -3,13 +3,13 @@ from bitcoin.core.script import *
 ######################################################################
 # This function will be used by Alice and Bob to send their respective
 # coins to a utxo that is redeemable either of two cases:
-# 1) Recipient provides x such that hash(x) = hash of secret 
+# 1) Recipient provides x such that hash(x) = hash of secret
 #    and recipient signs the transaction.
 # 2) Sender and recipient both sign transaction
-# 
+#
 # TODO: Fill this in to create a script that is redeemable by both
 #       of the above conditions.
-# 
+#
 # See this page for opcode: https://en.bitcoin.it/wiki/Script
 #
 #
