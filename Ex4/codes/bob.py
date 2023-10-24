@@ -12,6 +12,7 @@ from keys import (alice_public_key_BTC, alice_address_BTC, bob_secret_key_BTC, b
 # Bob wants to exchange his BTC in BCY Testnet with Alice's BTC in Testnet3 #
 #############################################################################
 
+# 创建 Bob 的原子交换交易
 def bob_swap_tx(txid_to_spend, utxo_index, amount_to_send, hash_of_secret):
     txout_script = coinExchangeScript(bob_public_key_BCY, alice_public_key_BCY, hash_of_secret)
     txout = create_txout(amount_to_send, txout_script)
@@ -25,12 +26,14 @@ def bob_swap_tx(txid_to_spend, utxo_index, amount_to_send, hash_of_secret):
     print('Bob swap tx (BCY) created successfully!')
     return tx, txout_script
 
+# 创建时间锁定的交易 确保 Bob 可以在特定时间后将比特币返回给自己
 def return_coins_tx(amount_to_send, last_tx, lock_time):
     txin = create_txin(b2x(last_tx.GetTxid()), 0)
     txout = create_txout(amount_to_send, P2PKH_scriptPubKey(bob_address_BCY))
     tx = CMutableTransaction([txin], [txout], nLockTime=lock_time)
     return tx
 
+# 完成 Bob 的交易
 def complete_return_tx(return_coins_tx, txin_scriptPubKey, alice_signature_BCY):
     bob_signature_BCY = sign_BCY(return_coins_tx, txin_scriptPubKey)
     txin = return_coins_tx.vin[0]
@@ -40,6 +43,7 @@ def complete_return_tx(return_coins_tx, txin_scriptPubKey, alice_signature_BCY):
     print('Bob return coins (BCY) tx created successfully!')
     return return_coins_tx
 
+# 赎回交换
 def redeem_swap(amount_to_send, alice_swap_tx, txin_scriptPubKey, alice_secret_x):
     txout_script = P2PKH_scriptPubKey(bob_address_BTC)
     txout = create_txout(amount_to_send, txout_script)
