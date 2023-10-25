@@ -81,15 +81,15 @@ Group 31
 			def coinExchangeScriptSig1(sig_recipient, secret):
 				return [
 					# fill this in!
-					secret,
-					sig_recipient
+					sig_recipient,
+					secret
 				]
 		b 完善 coinExchangeScriptSig2 脚本
 			def coinExchangeScriptSig2(sig_sender, sig_recipient):
 				return [
 					# fill this in!
-					sig_recipient,
-					sig_sender
+					sig_sender,
+					sig_recipient
 				]
 	C 运行 swap.py
 		a broadcast_transactions = False && alice_redeems = False 输出结果如下（运行截图 C_a.png）。

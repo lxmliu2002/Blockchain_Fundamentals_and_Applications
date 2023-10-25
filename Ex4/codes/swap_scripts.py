@@ -43,16 +43,16 @@ def coinExchangeScript(public_key_sender, public_key_recipient, hash_of_secret):
 def coinExchangeScriptSig1(sig_recipient, secret):
     return [
         # fill this in!
-        secret,
-        sig_recipient
+        sig_recipient,
+        secret
     ]
 
 # This is the ScriptSig for sending coins back to the sender if unredeemed
 def coinExchangeScriptSig2(sig_sender, sig_recipient):
     return [
         # fill this in!
+        sig_sender,
         sig_recipient,
-        sig_sender
     ]
 
 #
