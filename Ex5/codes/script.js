@@ -17,7 +17,6 @@ let GENESIS = '0x000000000000000000000000000000000000000000000000000000000000000
 // This is the ABI for your contract (get it from Remix, in the 'Compile' tab)
 // ============================================================
 // FIXME: fill this in with your contract's ABI
-
 let abi = [
 	{
 		"constant": false,
@@ -85,9 +84,9 @@ abiDecoder.addABI(abi);
 let BlockchainSplitwiseContractSpec = web3.eth.contract(abi);
 
 // This is the address of the contract you want to connect to; copy this from Remixs
-let contractAddress = '0xCF41A5Ec0f0D142BEAee29cD00693ED0ccE2a416'; // FIXME: fill this in with your contract's address/hash
+let contractAddress = '0x372440F80a1DF02Fa16BCB517e2F9aA0ba4ee4e9'; // FIXME: fill this in with your contract's address/hash
 
-let BlockchainSplitwise = BlockchainSplitwiseContractSpec.at(contractAddress)
+let BlockchainSplitwise = BlockchainSplitwiseContractSpec.at(contractAddress);
 
 
 // =============================================================================
@@ -95,38 +94,15 @@ let BlockchainSplitwise = BlockchainSplitwiseContractSpec.at(contractAddress)
 // =============================================================================
 
 // TODO: Add any helper functions here!
-
-function getCallData(extractor_fn, early_stop_fn) {
-	const results = new Set();
-	const all_calls = getAllFunctionCalls(contractAddress, 'add_IOU', early_stop_fn);
-	for (let i = 0; i < all_calls.length; i++) {
-		const extracted_values = extractor_fn(all_calls[i]);
-		for (let j = 0; j < extracted_values.length; j++) {
-			results.add(extracted_values[j]);
-		}
-	}
-	return Array.from(results);
+function getData(dataExtractor, stopCondition) {
+    const Calls = getAllFunctionCalls(contractAddress, 'add_IOU', stopCondition);
+    const Result = Calls.map(Call => dataExtractor(Call)).flat();
+    return Array.from(new Set(Result));
 }
-
-function getCreditors() {
-	return getCallData((call) => {
-		// call.args[0] is the creditor.
-		return [call.args[0]];
-	}, /*early_stop_fn=*/null);
+function getCreditors(user) {
+    const Creditors = getData(Call => [Call.args?.[0].toLowerCase()], null);
+    return Creditors.filter(creditor => BlockchainSplitwise.lookup(user, creditor).toNumber() > 0);
 }
-
-function getCreditorsForUser(user) {
-	let creditors = []
-	const all_creditors = getCreditors()
-	for (let i = 0; i < all_creditors.length; i++) {
-		const amountOwed = BlockchainSplitwise.lookup(user, all_creditors[i]).toNumber();
-		if (amountOwed > 0) {
-			creditors.push(all_creditors[i])
-		}
-	}
-	return creditors;
-}
-
 
 // TODO: Return a list of all users (creditors or debtors) in the system
 // You can return either:
@@ -134,48 +110,24 @@ function getCreditorsForUser(user) {
 // OR
 //   - a list of everyone currently owing or being owed money
 // * 返回一个地址列表，这个地址列表包含:"曾经发送或收到欠条的每个人"或"目前欠或被欠钱的每个人"。
-
 function getUsers() {
-	return getCallData((call) => {
-		// call.from is debtor and call.args[0] is creditor.
-		return [call.from, call.args[0]]
-	}, /*early_stop_fn=*/null);
+    return getData(Call => [Call.from.toLowerCase(), Call.args?.[0].toLowerCase()], null);
 }
-
-
 
 // TODO: Get the total amount owed by the user specified by 'user'
 // * 返回指定用户所欠的总金额
-
 function getTotalOwed(user) {
-	// We assume lookup is up-to-date (all cycles removed).
-	let totalOwed = 0;
-	const all_creditors = getCreditors();
-	for (let i = 0; i < all_creditors.length; i++) {
-		totalOwed += BlockchainSplitwise.lookup(user, all_creditors[i]).toNumber();
-	}
-	return totalOwed;
+    const Creditors = getData(Call => [Call.args?.[0].toLowerCase()], null);
+    return Creditors.reduce((acc, creditor) => acc + BlockchainSplitwise.lookup(user, creditor).toNumber(), 0);
 }
-
-
 
 // TODO: Get the last time this user has sent or received an IOU, in seconds since Jan. 1, 1970
 // Return null if you can't find any activity for the user.
 // HINT: Try looking at the way 'getAllFunctionCalls' is written. You can modify it if you'd like.
 // * 返回该用户上次记录活动的UNIX时间戳(自1970年1月1日以来的秒数)(发送欠条或被列为欠条上的"债权人")。如果找不到活动，则返回null
-
 function getLastActive(user) {
-	const all_timestamps = getCallData((call) => {
-		if (call.from == user || call.args[0] == user) {
-			return [call.timestamp];
-		}
-		return [];
-	}, (call) => {
-		// Return early as soon as you find this user.
-		return call.from == user || call.args[0] == user;
-	});
-	return Math.max(all_timestamps);
-
+    const timeStamp = getData(Call => (Call.from.toLowerCase() === user.toLowerCase() || Call.args?.[0].toLowerCase() === user.toLowerCase()) ? [Call.timestamp] : [], Call => Call.from.toLowerCase() === user.toLowerCase() || Call.args?.[0].toLowerCase() === user.toLowerCase());
+    return Math.max(...timeStamp);
 }
 
 // TODO: add an IOU ('I owe you') to the system
@@ -183,44 +135,20 @@ function getLastActive(user) {
 // The amount you owe them is passed as 'amount'
 // * 向合约提交一个欠条以及相应的债权人和所欠数量，不返回任何值
 function add_IOU(creditor, amount) {
-    const Path = doBFS(creditor, web3.eth.defaultAccount, getCreditorsForUser);
-	let min_Debt = null;
-    if (Path != null) {
+    const Path = doBFS(creditor, web3.eth.defaultAccount, getCreditors);
+    if (Path)
+	{
+        let minDebt = Infinity;
         for (let i = 1; i < Path.length; i++)
 		{
             const Debt = BlockchainSplitwise.lookup(Path[i - 1], Path[i]).toNumber();
-            if (min_Debt == null || min_Debt > Debt)
-			{
-                min_Debt = Debt;
-            }
+            minDebt = Math.min(minDebt, Debt);
         }
-        return BlockchainSplitwise.add_IOU(creditor, amount, Path, Math.min(min_Debt, amount));
+        const finalDebt = Math.min(minDebt, amount);
+        return BlockchainSplitwise.add_IOU(creditor, amount, Path, finalDebt);
     }
     return BlockchainSplitwise.add_IOU(creditor, amount, [], 0);
 }
-
-// function getCreditorsForUser(user) {
-// 	let creditors = []
-// 	const all_creditors = getCreditors()
-// 	for (let i = 0; i < all_creditors.length; i++) {
-// 		const amountOwed = BlockchainSplitwise.lookup(user, all_creditors[i]).toNumber();
-// 		if (amountOwed > 0) {
-// 			creditors.push(all_creditors[i])
-// 		}
-// 	}
-// 	return creditors;
-// }
-
-// function getCreditors() {
-// 	return getCallData((call) => {
-// 		// call.args[0] is the creditor.
-// 		return [call.args[0]];
-// 	}, /*early_stop_fn=*/null);
-// }
-
-
-
-
 
 // =============================================================================
 //                              Provided Functions

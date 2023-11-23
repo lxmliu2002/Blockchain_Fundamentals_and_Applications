@@ -3,7 +3,7 @@
 // You should write and develop your contract in Remix and then, before submitting, copy and paste it here
 pragma solidity >=0.4.0;
 
-contract Split_Wise {
+contract BlockchainSplitwise {
     struct Debt
     {
         uint32 amount;
