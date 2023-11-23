@@ -3,7 +3,7 @@
 // You should write and develop your contract in Remix and then, before submitting, copy and paste it here
 pragma solidity >=0.4.0;
 
-contract BlockchainSplitwise {
+contract Split_Wise {
     struct Debt
     {
         uint32 amount;
@@ -28,7 +28,7 @@ contract BlockchainSplitwise {
         require((debt.amount + amount) >= min_Amount, "The amount is smaller than min_Amount!");
 
         require(creditor == path[0] && debtor == path[path.length - 1], "The path is wrong!");
-        for(uint256 i = 0; i < path.length -1; i++)
+        for(uint256 i = 0; i < path.length - 1; i++)
         {
             require(Debts[path[i]][path[i + 1]].amount != 0, "The debt is not exist!");
             require(Debts[path[i]][path[i + 1]].amount >= min_Amount, "The debt does not enough to deduct the min_Amount!");
