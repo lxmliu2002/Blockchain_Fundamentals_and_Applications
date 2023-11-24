@@ -131,8 +131,7 @@ function lookup(address debtor, address creditor) public view returns (uint32 re
   ```javascript
   function getData(dataExtractor, stopCondition) {
       const Calls = getAllFunctionCalls(contractAddress, 'add_IOU', stopCondition);
-      const Result = Calls.map(Call => dataExtractor(Call)).flat();
-      return Array.from(new Set(Result));
+      return Array.from(new Set(Calls.map(Call => dataExtractor(Call)).flat()));
   }
   ```
 
