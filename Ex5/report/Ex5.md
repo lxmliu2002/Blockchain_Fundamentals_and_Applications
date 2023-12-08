@@ -117,6 +117,16 @@ function lookup(address debtor, address creditor) public view returns (uint32 re
       debt.amount += amount - min_Amount;
       ```
 
+按照实验手册要求，进行如下了 gas 的优化：
+
+1. 将 lookup 函数声明位 view，告诉以太坊该函数不会修改状态，实现 gas 的优化；
+2. 使用 require 确定运行条件，避免 gas 浪费；
+3. 将函数编写在客户端，减少合约中的函数量，减少成本。
+
+优化后可以看到合约所消耗的 gas 如下，是一个较为合理的取值。
+
+<img src="./pic/13.png" style="zoom:50%;" />
+
 ## （三）客户端
 
 基于已编写的智能合约的后端代码，实现了如下客户端前端的编写。
