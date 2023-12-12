@@ -8,7 +8,10 @@
 
 # 一、实验要求
 
-使用 `Solidity` 和 `web3.js` 在以太坊（Ethereum）上实现一个复杂的去中心化应用程序（DApp），编写一个智能合约和访问它的用户客户端，学习 `DApp` 的“全栈”开发。
+探索私有事务（private transactions）的实现：
+
+* 制作一个简单版本的花费 Tornado 电路；
+* 生成赎回 Tornado 的有效性证明。
 
 
 
@@ -16,233 +19,258 @@
 
 ## （一）前期准备
 
-按照实验手册说明，安装 `Node.js`、 `Ganache CLI` 等工具。
+按照实验说明，进行实验的环境配置。安装完成后，运行 npm test，可以看到部分样例测试通过，说明环境配置成功。
 
 <img src="./pic/1.png" style="zoom: 33%;" />
 
-学习使用 `REMIX` 进行 `Solidity` 语言智能合约的编写。
+## （二）了解 circom
 
-<img src="./pic/5.png" style="zoom: 20%;" />
+阅读给定的 example.circom 电路示例，了解 circom 的语法等内容，同时完成 writeup.md 中的问题。
 
-使用 `IDE` 修改 `scriots.js` 构建客户端。
+* writeup.md 已附于附件中。
 
-## （二）智能合约
+接着按照 TUTORIAL.md 文件的指导，使用 SmallOddFactorization 电路为 $7\times 7\times 17 \times 19 = 2261$ 创建一个证明。
 
-本项目中，使用 `Solidity` 语言在 `REMIX` 平台上完成了智能合约的编写。
+* 编写 circom 电路，并编译将其生成为 json 文件；
 
-本项目的智能合约要求 `Solidity` 编译器的版本至少为 `0.4.0`。
+* 创建可信设置，得到 verification_key.json 文件与 proving_key.json 文件。
 
-```solidity
-pragma solidity >=0.4.0;
-```
+* 使用命令查看输入输出格式：
 
-为了能够轻松地追踪和管理不同地址之间的债务情况，定义了如下数据结构：
+  <img src="./pic/5.png" style="zoom:50%;" />
 
-* 定义了 `Debt` 结构体，其 `amount` 属性用于表示两个地址（债务主体）间的债务金额。
+* 按照格式，将输入写入到 input.json 文件中：
 
-  ```solidity
-  struct Debt { uint32 amount; }
+  ```json
+  {
+  	"product": 2261,
+  	"factors": [
+  		7,
+  		17,
+  		19
+  	]
+  }
   ```
 
-* 定义了一个映射结构，用于表示 $A \xrightarrow{Debt} B$ 的债务图关系。
+* 生成见证文件 witness.json；
 
-  * 使用 `Debts[debtor][creditor]` 得到一个 `Debt` 结构体，表示债务人 `debtor` 欠债权人 `creditor` 的债务情况。
-  * 为了确保合约的安全性，确保映射中的数据只能在合约内部进行修改和查询，使用 `internal`  关键字予以实现。
+* 生成证据，得到 proof.json 与 public.json（公开）；
 
-  ```solidity
-  mapping(address => mapping(address => Debt)) internal Debts;
-  ```
+* 使用 `snarkjs verify` 命令进行验证。
 
-接着实现了 **`lookup`** 函数，用于查询返回债务人欠债权人的金额。
+## （三）开关电路
 
-*  `public`表示可以从合约外部调用，而 `view` 关键字表示该函数仅作查询使用，不会修改合约的状态。
+### 1. IfThenElse
 
-```solidity
-function lookup(address debtor, address creditor) public view returns (uint32 ret) {
-    ret = Debts[debtor][creditor].amount;
+IfThenElse 电路验证了条件表达式的正确求值，有 1 个输出，和 3 个输入：
+
+* condition：应该是 0 或 1；
+* true_value：如果 condition 是 1，那么输出 true_value；
+* false_value：如果 condition 是 0，那么输出 false_value；
+
+对于上述要求，使用简单的 if - else 即可实现。具体代码实现如下：
+
+```json
+template IfThenElse() {
+    signal input condition;
+    signal input true_value;
+    signal input false_value;
+    signal output out;
+
+    condition * (1 - condition) === 0; // 保证 condition 为 0 或 1
+    if(condition) out <== true_value;
+    else out <== false_value;
 }
 ```
 
-接着实现了 **`add_IOU`** 函数，为调用者添加一个欠条，如果已经欠钱，金额会增加。金额必须为正数。
+### 2. SelectiveSwitch
 
-* 按照实验要求，进行基本检查：
+SelectiveSwitch 接受两个数据输入（in0、in1）并生成两个输出。如果 select(s) 输入为 1，则它会反转输出中的输入顺序。如果 s 为 0，则保留输入顺序。该要求同样可借助 if - else 语句实现。具体代码实现如下：
 
-  * 为防止自己清除自己债务等操作，要求债务人与债权人不为同一人。
+```json
+template SelectiveSwitch() {
+    signal input in0;
+    signal input in1;
+    signal input s;
+    signal output out0;
+    signal output out1;
 
-    ```solidity
-    require(creditor != debtor, "Debtor and Creditor cannot be the same one!");
-    ```
-
-  * 同时，为防止恶意刷款，要求金额必须为正数。
-
-    ```solidity
-    require(amount > 0, "Amount must be greater than 0!");
-    ```
-
-* 接着按照 `min_Amount` 的情况进行讨论。`min_Amount` 表示当前路径中的最小金额。
-
-  * 当 `min_Amount` 为 0 时，直接将债务金额增加上新的借款金额，然后返回。
-
-    ```solidity
-    if (min_Amount == 0)
+    s * (1 - s) === 0; // 保证 s 为 0 或 1
+    if(s)
     {
-        debt.amount += amount;
-        return;
+        out0 <== in1;
+        out1 <== in0;
     }
-    ```
+    else
+    {
+        out0 <== in0;
+        out1 <== in1;
+    }
+}
+```
 
-  * 当其不为 0 时。
+## （四）消费电路
 
-    * 首先进行基本检查，确保债务金额和新增的借款金额总和不小于最小金额；验证传入的路径是否正确，即路径的第一个地址应该是债权人，最后一个地址应该是债务人。
+按照实验手册要求，该电路应验证所提供的（私有）Merkle 路径是硬币 H(nullifier, nonce) 的有效 Merkle 证明，而其根节点的哈希值即为其输入 digest。实现思路已添加到注释中。
 
-      ```solidity
-      require((debt.amount + amount) >= min_Amount, "The amount is smaller than min_Amount!");
-      require(creditor == path[0] && debtor == path[path.length - 1], "The path is wrong!");
-      ```
+```json
+template Spend(depth) {
+    signal input digest; // 根节点（公开）
+    signal input nullifier; // the nullifier（公开）
+    signal private input nonce; // the nonce（私有）
+    signal private input sibling[depth];
+    signal private input direction[depth];
 
-    * 接着遍历路径中的每一对地址，检查债务是否存在，并且是否足够扣除最小金额。如果存在，就扣除相应的最小金额。
+    // TODO
+    component Hash[depth + 1]; // 保存每一层节点的 hash
+    component switches[depth]; // 根据 direction 调整输出
+	// 初始化 Hash[0] 为硬币 H(nullifier, nonce)
+    Hash[0] = Mimc2();
+    Hash[0].in0 <== nullifier; 
+    Hash[0].in1 <== nonce;
+    for (var i = 0; i < depth; ++i)
+	{
+        switches[i] = SelectiveSwitch();
+        switches[i].in0 <== Hash[i].out;
+        switches[i].in1 <== sibling[i];
+        switches[i].s <== direction[i];
+        Hash[i + 1] = Mimc2();
+		// 左节点
+        Hash[i + 1].in0 <== switches[i].out0;
+		// 右节点
+        Hash[i + 1].in1 <== switches[i].out1;
+    }
+	// 验证是否匹配
+    Hash[depth].out === digest;
+}
+```
 
-      ```solidity
-      for(uint256 i = 0; i < path.length - 1; i++)
-      {
-          require(Debts[path[i]][path[i + 1]].amount != 0, "The debt is not exist!");
-          require(Debts[path[i]][path[i + 1]].amount >= min_Amount, "The debt does not enough to deduct the min_Amount!");
-          Debts[path[i]][path[i + 1]].amount -= min_Amount;
-      }
-      ```
+## （五）计算花费电路的输入
 
-    * 最后更新债务信息。
+1. 借助给定的 SparseMerkleTree 类创建一个新的 SparseMerkleTree，其深度为给定的 depth。
 
-      ```solidity
-      debt.amount += amount - min_Amount;
-      ```
+   ```json
+   let merkleTree = new SparseMerkleTree(depth);
+   ```
 
-按照实验手册要求，进行如下了 gas 的优化：
+2. 遍历 transcript 列表，构建 Merkle Tree。
 
-1. 将 lookup 函数声明位 view，告诉以太坊该函数不会修改状态，实现 gas 的优化；
-2. 使用 require 确定运行条件，避免 gas 浪费；
-3. 将函数编写在客户端，减少合约中的函数量，减少成本。
+   - 如果数组只有一个元素，表示其要插入 Merkle 树的硬币。
 
-优化后可以看到合约所消耗的 gas 如下，是一个较为合理的取值。
+   - 如果数组将有两个元素，需要计算其哈希并插入 Merkle 树。
 
-<img src="./pic/13.png" style="zoom:50%;" />
+     ```json
+     for (let i = 0; i < transcript.length; i++)
+     {
+       const item = transcript[i];
+       if (item.length === 1) merkleTree.insert(item[0]);
+       else
+       {
+         const nullifierHash = mimc2(item[0], item[1]);
+         merkleTree.insert(nullifierHash);
+         if (item[0] === nullifier) nonce = item[1];
+       }
+     }
+     ```
 
-## （三）客户端
+3. 创建一个包含 digest、nonce 和 nullifier 的对象，作为 Spend 电路的输入。
 
-基于已编写的智能合约的后端代码，实现了如下客户端前端的编写。
+   ```json
+   let spendInput = {
+     digest: merkleTree.digest,
+     nonce: nonce,
+     nullifier: nullifier
+   };
+   ```
 
-* 首先将编写好的智能合约在 `REMIX` 平台中编译并部署，将生成的 `ABI` 与部署的合约地址填写到 `scriots.js` 客户端代码的指定位置。
+4. 获取 Merkle 路径，将路径上的节点添加到前面创建的对象中并返回。
 
-* 接着实现了 **`getData`** 函数，用于从合约中的 `add_IOU` 函数调用中提取数据。
+   ```json
+   let path = merkleTree.path(mimc2(nullifier, nonce));
+   
+   for (let i = 0; i < path.length; i++)
+   {
+     const item = path[i];
+     spendInput["sibling[" + i + "]"] = String(item[0]);
+     spendInput["direction[" + i + "]"] = String(item[1] ? 1 : 0);
+   }
+   
+   return spendInput;
+   ```
 
-  * 使用 `map` 函数遍历所有的函数调用，对每个调用应用 `dataExtractor` 函数，然后使用 `flat` 获得一个包含从函数调用中提取的数据的一维数组，去重后用作返回值。
+## （六）赎回证明
 
+按照实验手册说明，使用 circom 和 snarkjs 创建一个 SNARK 用来证明深度为 10 的 Merkle 树中存在与 transcript3.txt 相对应的  nullifier“10137284576094” 。
 
-  ```javascript
-  function getData(dataExtractor, stopCondition) {
-      const Calls = getAllFunctionCalls(contractAddress, 'add_IOU', stopCondition);
-      return Array.from(new Set(Calls.map(Call => dataExtractor(Call)).flat()));
-  }
-  ```
+编写好 **二（五）** 花费电路的输入函数后，借助 compute_spend_input.js 文件中的注释，使用以下命令生成 input.json 文件。
 
-* 实现了 **`getCreditors `**函数，用于获取与 `user` 有关的债权人。
+```shell
+node compute_spend_inputs.js -o input.json 10 transcript3.txt 10137284576094
+```
 
-  * 调用 `getData` 函数，提取了所有 `add_IOU ` 函数调用中的债权人信息。
-  * 使用 `filter` 函数，通过调用 `BlockchainSplitwise` 函数获取 `user` 在 `creditor` 处的债务金额，筛选出债务金额大于 0 的债权人并返回。
+> 代码文件中的注释缺少 `node`，对于不熟悉 js 脚本执行的同学存在一定误区。
 
-  ```javascript
-  function getCreditors(user) {
-      const Creditors = getData(Call => [Call.args?.[0].toLowerCase()], null);
-      return Creditors.filter(creditor => BlockchainSplitwise.lookup(user, creditor).toNumber() > 0);
-  }
-  ```
-
-* 然后是 **`getUsers`** 函数，用于获取合约中 `add_IOU` 函数调用涉及的债务人与债权人，并将其作为列表返回。
-
-  * 调用 `getData` 函数，提取了所有 `add_IOU` 函数调用中的债务人和债权人信息。
-
-  ```javascript
-  function getUsers() {
-      return getData(Call => [Call.from.toLowerCase(), Call.args?.[0].toLowerCase()], null);
-  }
-  ```
-
-* 实现了 **`getTotalOwed`** 函数，计算 `user` 欠所有债权人的总额并返回。
-
-  * 调用 `getData` 函数，提取了所有 `add_IOU` 函数调用中的债务人和债权人信息。
-  * 使用 `reduce` 函数对所有债权人进行迭代，累加每个债权人对特定用户的债务金额然后返回。
-
-  ```javascript
-  function getTotalOwed(user) {
-      const Creditors = getData(Call => [Call.args?.[0].toLowerCase()], null);
-      return Creditors.reduce((acc, creditor) => acc + BlockchainSplitwise.lookup(user, creditor).toNumber(), 0);
-  }
-  ```
-
-* 实现了 **`getLastActive`**  函数，用于返回 `user` 最后一次活动的 UNIX 时间戳。
-
-  * 调用 `getData` 函数，提取了所有 `add_IOU` 函数调用中涉及到特定用户的时间戳信息。
-  * 使用 `Math.max` 函数找到数组中的最大时间戳，即特定用户最后一次活动的时间戳，然后返回。
-
-  ```javascript
-  function getLastActive(user) {
-      const timeStamp = getData(Call => (Call.from.toLowerCase() === user.toLowerCase() || Call.args?.[0].toLowerCase() === user.toLowerCase()) ? [Call.timestamp] : [], Call => Call.from.toLowerCase() === user.toLowerCase() || Call.args?.[0].toLowerCase() === user.toLowerCase());
-      return Math.max(...timeStamp);
-  }
-  ```
-
-* 最后实现了 **`add_IOU`** 函数，用于向合约中添加一个债务记录。
-
-  * 调用 `doBFS` 函数，查找从 `creditor` 到 `web3.eth.defaultAccount` 的路径，且节点是债权人的集合。
-  * 如果找到有效路径，则将 `minDebt` 初始化为无穷大。
-    * 接着遍历路径上的节点，获取相邻节点间的债务记作 `Debt`，通过 `Math.min` 来找到路径上最小的债务。
-    * 将路径上最小债务和输入的债务金额之间的较小值设置为 `finalDebt`。
-    * 调用 `BlockchainSplitwise.add_IOU` 函数，向区块链添加债务信息。
-
-  * 如果没找到有效路径，则调用 `BlockchainSplitwise.add_IOU` 函数，向区块链添加债务信息，其中 `finalDebt` 设置为 0。
-
-  ```javascript
-  function add_IOU(creditor, amount) {
-      const Path = doBFS(creditor, web3.eth.defaultAccount, getCreditors);
-      if (Path)
-  	{
-          let minDebt = Infinity;
-          for (let i = 1; i < Path.length; i++)
-  		{
-              const Debt = BlockchainSplitwise.lookup(Path[i - 1], Path[i]).toNumber();
-              minDebt = Math.min(minDebt, Debt);
-          }
-          const finalDebt = Math.min(minDebt, amount);
-          return BlockchainSplitwise.add_IOU(creditor, amount, Path, finalDebt);
-      }
-      return BlockchainSplitwise.add_IOU(creditor, amount, [], 0);
-  }
-  ```
+<img src="./pic/7.png" style="zoom: 33%;" />
 
 
 
 # 三、实验结果
 
-完成好智能合约的部署，打开 `index.html`，可以看到如下初始化页面。可以看到，每个地址的总欠款数为 `$0`（缺省值），上次调用时间为  `Invalid Date`（缺省值）。
+## （一）了解 circom
 
-<img src="./pic/6.png" style="zoom: 20%;" />
+使用命令验证证明，使用之前导出的文件 verify_key.json、proof.json 和 public.json 来检查证明是否有效。
 
-选择第一个用户，输入第二个用户的地址，表示向第二个用户添加欠款 1，点击 `Add IOU`，可以看到，`Users` 列表中多了这两个用户的地址，用户 1 的欠款数变为 `$1`，用户 1 与用户 2 的最近调用时间变为 `11/23/2023, 11:47:30 PM`。
+<img src="./pic/3.png" style="zoom: 50%;" />
 
-<img src="./pic/7.png" style="zoom:20%;" />
+如图，命令输出 OK，说明证明有效。
 
-选择第二个用户，输入第三个用户的地址，表示向第三个用户添加欠款 2，点击 `Add IOU`，可以看到，`Users` 列表中多了这两个用户的地址，用户 2 的欠款数变为 `$2`，用户 2 与用户 3 的最近调用时间变为 `11/23/2023, 11:49:09 PM`。
+## （二）电路组件测试
 
-<img src="./pic/8.png" style="zoom:20%;" />
+按照要求完成开关电路、消费电路及其输入的编写，使用 npm test 命令进行测试。
 
-选择第三个用户，输入第一个用户的地址，表示向第一个用户添加欠款 3，点击 `Add IOU`，可以看到，用户 1 的欠款数变为 `$0`，用户 2 的欠款数变为 `$1`，用户 3 的欠款数变为 `$2`，用户 3 与用户 1 的最近调用时间变为 `11/23/2023, 11:50:24 PM`。
+<img src="./pic/2.png" style="zoom:50%;" />
 
-<img src="./pic/9.png" style="zoom:20%;" />
+可以看到测试全部通过，说明函数编写正确。
 
-<img src="./pic/10.png" style="zoom:20%;" />
+## （三）赎回证明
 
-<img src="./pic/11.png" style="zoom:20%;" />
+按照 **二（二）** 中的流程对其验证：
 
-上述过程说明，最初的债务情况形成的循环得到解决，应用程序的功能得到验证。
+<img src="./pic/6.png" style="zoom: 50%;" />
 
-<img src="./pic/12.png" style="zoom:50%;" />
+如图，命令输出 OK，说明证明有效。
+
+
+
+# 四、说明
+
+本次实验输出文件均已置于 artifacts 文件夹下。
+
+* proof_factor.json
+* proof_spend.json
+* verification_key_factor.json
+* verification_key_spend.json
+* writeup.md
+
+本次实验中，**了解 circom** 部分的全部代码置于 circuits/example 文件夹中。
+
+* circuit.json
+* example.circom
+* example_zn.circom
+* input.json
+* proof.json
+* proving_key.json
+* public.json
+* verification_key.json
+* witness.json
+
+本次实验中，**赎回证明**部分的全部代码已置于 test/circuits/spend10 文件夹中。
+
+* circuit.json
+* input.json
+* proof.json
+* proving_key.json
+* public.json
+* spend10.circom
+* verification_key.json
+* witness.json

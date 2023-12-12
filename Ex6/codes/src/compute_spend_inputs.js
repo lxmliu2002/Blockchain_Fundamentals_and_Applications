@@ -38,8 +38,7 @@ Arguments:
  *               Each item is an array.
  *               If the array hash one element, then that element is the coin.
  *               Otherwise the array will have two elements, which are, in order:
- *                 the nullifier and
- *                 the nonce
+ *                 the nullifier and the nonce
  *               This list will contain **no** duplicate nullifiers or coins.
  *   nullifier: The nullifier to print inputs to validity verifier for.
  *              This nullifier will be one of the nullifiers in the transcript.
@@ -61,8 +60,7 @@ Arguments:
  * }
  * where each ... is a string-represented field element (number)
  * notes about each:
- *   "digest": the digest for the whole tree after the transcript is
- *                  applied.
+ *   "digest": the digest for the whole tree after the transcript is applied.
  *   "nullifier": the nullifier for the coin being spent.
  *   "nonce": the nonce for that coin
  *   "sibling[i]": the sibling of the node on the path to this coin
@@ -73,23 +71,64 @@ Arguments:
  *       The "direction" keys the boolean directions from the SparseMerkleTree
  *       path, casted to string-represented integers ("0" or "1").
  */
-function computeInput(depth, transcript, nullifier) {
-    // TODO
-    return {};
+function computeInput(depth, transcript, nullifier)
+{
+  // TODO
+  let merkleTree = new SparseMerkleTree(depth);
+  let nonce;
+
+  for (let i = 0; i < transcript.length; i++)
+  {
+    const item = transcript[i];
+
+    if (item.length === 1)
+    {
+      merkleTree.insert(item[0]);
+    }
+    else
+    {
+      const nullifierHash = mimc2(item[0], item[1]);
+      merkleTree.insert(nullifierHash);
+
+      if (item[0] === nullifier)
+      {
+        nonce = item[1];
+      }
+    }
+  }
+
+  let spendInput = {
+    digest: merkleTree.digest,
+    nonce: nonce,
+    nullifier: nullifier
+  };
+
+  let path = merkleTree.path(mimc2(nullifier, nonce));
+
+  for (let i = 0; i < path.length; i++)
+  {
+    const item = path[i];
+    spendInput["sibling[" + i + "]"] = String(item[0]);
+    spendInput["direction[" + i + "]"] = String(item[1] ? 1 : 0);
+  }
+
+  return spendInput;
 }
+
+
 
 module.exports = { computeInput };
 
 // If we're not being imported
 if (!module.parent) {
-    const args = docopt(doc);
-    const transcript =
-        fs.readFileSync(args['<transcript>'], { encoding: 'utf8' } )
-        .split(/\r?\n/)
-        .filter(l => l.length > 0)
-        .map(l => l.split(/\s+/));
-    const depth = parseInt(args['<depth>']);
-    const nullifier = args['<nullifier>'];
-    const input = computeInput(depth, transcript, nullifier);
-    fs.writeFileSync(args['-o'], JSON.stringify(input) + "\n");
+  const args = docopt(doc);
+  const transcript =
+    fs.readFileSync(args['<transcript>'], { encoding: 'utf8' })
+      .split(/\r?\n/)
+      .filter(l => l.length > 0)
+      .map(l => l.split(/\s+/));
+  const depth = parseInt(args['<depth>']);
+  const nullifier = args['<nullifier>'];
+  const input = computeInput(depth, transcript, nullifier);
+  fs.writeFileSync(args['-o'], JSON.stringify(input) + "\n");
 }
