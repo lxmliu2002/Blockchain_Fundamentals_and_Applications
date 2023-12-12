@@ -1,0 +1,6 @@
+1.安装nodejs和npm.（sudo apt install nodejs npm）
+2.进入项目文件夹运行bash install.sh，此操作会自动安装snarkjs, circom, mocha三个安装包。
+3.运行npm test，并验证是否大多数测试失败。如果大部分测试失败、少部分测试通过，那么说明环境配置成功。如果全部失败，说明环境配置有问题。
+4.安装过程中如果出现其他形如Command 'XXX' not found的报错，一般直接通过sudo apt install XXX安装即可。
+
+注意：如果采用本版本代码完成实验，那么注意提交的时候注意去掉node_modules、snarkjs-0.1.11、circom、mocha四个文件夹。这四个文件夹里面的内容为实验所需的依赖库，占用空间较大，而提交邮箱空间有限。

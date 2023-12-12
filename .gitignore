@@ -2,3 +2,7 @@
 **/.history
 **/__pycache__
 *.DS_STore
+*node_modules
+*snarkjs-0.1.11
+*circom
+*mocha
